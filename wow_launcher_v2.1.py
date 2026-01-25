@@ -3,6 +3,7 @@ from tkinter import messagebox, filedialog
 import os
 import json
 import sys
+from PIL import Image, ImageTk
 
 VERSION = "v2.2"
 AUTHOR = "GRaffaDev"
@@ -100,20 +101,26 @@ def center_window(root, width, height):
 
 def on_enter(e):
     e.widget["background"] = "#f7c5c5"
+    e.widget.config(cursor="hand2")
 
 def on_leave(e):
     e.widget["background"] = "#f0f0f0"
+    e.widget.config(cursor="")
 
 def on_enter_config(e):
     e.widget["background"] = "#fac8c8"
+    e.widget.config(cursor="hand2")
 
 def on_leave_config(e):
     e.widget["background"] = "#f5f5f5"
+    e.widget.config(cursor="")
 
 
 # ======================
 # 🎨 UI
 # ======================
+
+
 
 root = tk.Tk()
 root.title("WoW Realmlist Launcher - Created by GRaffaDev")
@@ -130,6 +137,27 @@ try:
     root.iconbitmap(icon_path)
 except:
     pass
+# ======================
+# 🌌 Fondo en movimiento
+# ======================
+
+# Creamos el canvas de fondo
+canvas_bg = tk.Canvas(root, width=WINDOW_WIDTH, height=WINDOW_HEIGHT, highlightthickness=0)
+canvas_bg.place(x=0, y=0)  # se pone detrás de todo
+
+# Cargamos la imagen del fondo y la redimensionamos al doble de ancho para scroll
+bg_image = Image.open(r"C:\Users\Gonzalo\Desktop\script wow\fondo_wow.jpg").resize((WINDOW_WIDTH*2, WINDOW_HEIGHT))
+bg_photo = ImageTk.PhotoImage(bg_image)
+bg_item = canvas_bg.create_image(0, 0, anchor="nw", image=bg_photo)
+
+# Función de animación del fondo
+def mover_fondo():
+    canvas_bg.move(bg_item, -1, 0)  # mover 1px a la izquierda
+    x1, y1, x2, y2 = canvas_bg.bbox(bg_item)
+    if x2 <= WINDOW_WIDTH:  # si se pasó de la pantalla, reiniciamos
+        canvas_bg.move(bg_item, WINDOW_WIDTH, 0)
+    canvas_bg.after(50, mover_fondo)  # velocidad del scroll
+mover_fondo()
 # ======================
 # 📦 CONTENEDORES
 # ======================
