@@ -25,7 +25,7 @@ Permite cambiar de servidor rápidamente y lanzar el juego desde una interfaz mo
 ## 📥 Descarga
 
 
-👉[Releases → Descargá Última versión disponible]**(https://github.com/0RaffaDev/wow-realmlist-launcher/releases/latest)
+👉[Releases → Descargá Última versión disponible](https://github.com/0RaffaDev/wow-realmlist-launcher/releases/latest)
 
 
 
