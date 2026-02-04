@@ -10,7 +10,7 @@ import webbrowser
 # CONFIG
 # ======================
 
-VERSION = "v3.3"
+VERSION = "v3.5"
 AUTHOR = "GRaffaDev"
 CONFIG_FILE = "config.json"
 
@@ -82,6 +82,21 @@ def save_config(data):
 config = load_config()
 
 # ======================
+# REALMS CONFIG
+# ======================
+
+if "realms" not in config:
+    config["realms"] = {
+        "🔥 Warmane": "set realmlist logon.warmane.com",
+        "⚔️ UltimoWoW": "set realmlist logon.ultimowow.com",
+        "🇦🇷 WowPatagonia": "set realmlist logon.wow-patagonia.win"
+    }
+    save_config(config)
+
+REALMS = config["realms"]
+
+
+# ======================
 # WOW
 # ======================
 
@@ -115,6 +130,64 @@ def cambiar_realm(nombre):
         os.startfile(config["wow_path"])
     except Exception as e:
         messagebox.showerror("Error", str(e))
+def agregar_server():
+    win = tk.Toplevel(root)
+    win.title("Agregar Server")
+    win.resizable(False, False)
+    center_window(win, 350, 220)
+
+    tk.Label(win, text="Nombre del server").pack(pady=(15, 5))
+    name_entry = tk.Entry(win, width=40)
+    name_entry.pack()
+
+    tk.Label(win, text="Realmlist").pack(pady=(15, 5))
+    realm_entry = tk.Entry(win, width=40)
+    realm_entry.pack()
+
+    def guardar():
+        nombre = name_entry.get().strip()
+        realm = realm_entry.get().strip()
+
+        if not nombre or not realm:
+            messagebox.showerror("Error", "Completá todos los campos")
+            return
+
+        REALMS[nombre] = realm
+        config["realms"] = REALMS
+        save_config(config)
+
+        win.destroy()
+        render_sidebar()
+
+def quitar_server():
+    if not REALMS:
+        messagebox.showinfo("Info", "No hay servers para quitar")
+        return
+
+    win = tk.Toplevel(root)
+    win.title("Quitar Server")
+    win.resizable(False, False)
+    center_window(win, 300, 200)
+
+    var = tk.StringVar(value=list(REALMS.keys())[0])
+
+    tk.Label(win, text="Seleccioná un server").pack(pady=10)
+
+    for name in REALMS:
+        tk.Radiobutton(win, text=name, variable=var, value=name).pack(anchor="w", padx=30)
+
+    def borrar():
+        del REALMS[var.get()]
+        config["realms"] = REALMS
+        save_config(config)
+
+        win.destroy()
+        render_sidebar()
+
+    tk.Button(win, text="Eliminar", fg="red", command=borrar).pack(pady=20)
+
+
+    tk.Button(win, text="Guardar", command=guardar).pack(pady=20)
 
 
 def open_donation():
@@ -143,8 +216,10 @@ topbar.pack(fill="x")
 body = tk.Frame(root, bg="#121212")
 body.pack(fill="both", expand=True)
 
-sidebar = tk.Frame(body, bg="#181818", width=260)
+sidebar = tk.Frame(body, bg="#181818", width=250)
 sidebar.pack(side="left", fill="y")
+sidebar.pack_propagate(False)
+
 
 content = tk.Frame(body, bg="#0e0e0e")
 content.pack(side="right", fill="both", expand=True)
@@ -492,16 +567,53 @@ for sec in ["Inicio", "Novedades", "Addons", "Perfil", "About"]:
 # SIDEBAR
 # ======================
 
-tk.Label(
-    sidebar,
-    text="SERVERS",
-    fg="#aaaaaa",
-    bg="#181818",
-    font=("Segoe UI", 11, "bold"),
-    height=3
-).pack(pady=(20, 15))
+# ===== CONTENEDOR SCROLLEABLE PARA SERVERS =====
 
-btn_cfg = tk.Button(
+servers_container = tk.Frame(sidebar, bg="#181818")
+servers_container.pack(fill="both", expand=True, padx=15)
+
+servers_canvas = tk.Canvas(
+    servers_container,
+    bg="#181818",
+    highlightthickness=0
+)
+servers_canvas.pack(side="left", fill="both", expand=True)
+
+servers_scroll = tk.Scrollbar(
+    servers_container,
+    orient="vertical",
+    command=servers_canvas.yview
+)
+servers_scroll.pack(side="right", fill="y")
+
+servers_canvas.configure(yscrollcommand=servers_scroll.set)
+
+servers_frame = tk.Frame(servers_canvas, bg="#181818")
+servers_window = servers_canvas.create_window(
+    (0, 0),
+    window=servers_frame,
+    anchor="nw"
+)
+
+def update_scrollregion(event):
+    servers_canvas.configure(scrollregion=servers_canvas.bbox("all"))
+
+servers_frame.bind("<Configure>", update_scrollregion)
+
+def resize_servers_frame(event):
+    servers_canvas.itemconfig(servers_window, width=event.width)
+
+servers_canvas.bind("<Configure>", resize_servers_frame)
+
+# ======================
+# RENDER SIDEBAR (SOLO SERVERS)
+# ======================
+
+def render_sidebar():
+    for w in servers_frame.winfo_children():
+        w.destroy()
+
+    btn_cfg = tk.Button(
     sidebar,
     text="⚙️ Configurar WoW",
     command=seleccionar_wow,
@@ -511,35 +623,62 @@ btn_cfg = tk.Button(
     height=3,
     font=("Segoe UI", 11, "bold"),
     padx=15,
-)
-btn_cfg.bind("<Enter>", hover_top_on)
-btn_cfg.bind("<Leave>", hover_top_off)
-btn_cfg.pack(fill="x", padx=15, pady=(0, 20))
-
-for nombre in REALMS:
-    b = tk.Button(
-        sidebar,
-        text=nombre,
-        command=lambda n=nombre: cambiar_realm(n),
-        bg="#252525",
-        fg="white",
-        bd=0,
-        height=3,
-        font=("Segoe UI", 12, "bold"),
-        anchor="w",
-        padx=15
     )
-    b.bind("<Enter>", hover_on)
-    b.bind("<Leave>", lambda e: hover_off(e, "#252525"))
-    b.pack(fill="x", padx=15, pady=8)
+    btn_cfg.bind("<Enter>", hover_top_on)
+    btn_cfg.bind("<Leave>", hover_top_off)
+    btn_cfg.pack(fill="x", padx=15, pady=(0, 20))
+
+    tk.Label(
+        sidebar,
+        text="SERVERS",
+        fg="#aaaaaa",
+        bg="#181818",
+        font=("Segoe UI", 11, "bold"),
+        height=3
+    ).pack(pady=(20, 15))
+
+
+    for nombre in REALMS:
+        b = tk.Button(
+            servers_frame,
+            text=nombre,
+            command=lambda n=nombre: cambiar_realm(n),
+            bg="#252525",
+            fg="white",
+            bd=0,
+            height=3,
+            font=("Segoe UI", 12, "bold"),
+            anchor="w",
+            padx=15
+        )
+        b.bind("<Enter>", hover_on)
+        b.bind("<Leave>", lambda e, bg="#252525": hover_off(e, bg))
+        b.pack(fill="x", padx=5, pady=6)
 
 # ======================
-# DONATION BUTTON
+# BOTONES FIJOS SIDEBAR
 # ======================
 
-# ======================
-# DONATION BUTTON
-# ======================
+
+tk.Button(
+    sidebar,
+    text="+ Agregar server",
+    command=agregar_server,
+    bg="#202020",
+    fg="white",
+    bd=0,
+    height=2
+).pack(fill="x", padx=15, pady=(10, 5))
+
+tk.Button(
+    sidebar,
+    text="- Quitar server",
+    command=quitar_server,
+    bg="#202020",
+    fg="white",
+    bd=0,
+    height=2
+).pack(fill="x", padx=15, pady=(0, 15))
 
 donate_btn = tk.Button(
     sidebar,
@@ -559,5 +698,6 @@ donate_btn.pack(side="bottom", fill="x", padx=15, pady=20)
 # START
 # ======================
 
+render_sidebar()
 render_inicio()
 root.mainloop()
